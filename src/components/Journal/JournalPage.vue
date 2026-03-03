@@ -49,7 +49,7 @@ const currentJournalContent = computed({
 
 <template>
   <div class="flex h-full overflow-hidden">
-    <div class="flex-1 flex-col min-w-0 overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <JournalToolbar
         :current-date="currentDate"
         @previous="goToPreviousDay"
@@ -57,16 +57,18 @@ const currentJournalContent = computed({
         @today="goToToday"
       />
       
-      <div class="day-editor flex-1 min-h-0 overflow-y-auto mx-10">
-        <NoteEditor
-          v-if="currentJournal"
-          v-model="currentJournalContent"
-          :key="currentDate.toISOString()"
-          :date="currentDate"
-        />
-        
-        <div v-else class="flex flex-1 items-center justify-center">
-          <Spinner size="lg" />
+      <div class="flex-1 min-h-0 overflow-y-auto">
+        <div class="mx-10 h-full flex">
+          <NoteEditor
+            v-if="currentJournal"
+            v-model="currentJournalContent"
+            :key="currentDate.toISOString()"
+            :date="currentDate"
+          />
+          
+          <div v-else class="flex flex-1 items-center justify-center">
+            <Spinner size="lg" />
+          </div>
         </div>
       </div>
     </div>
