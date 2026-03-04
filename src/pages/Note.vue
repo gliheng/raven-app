@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onActivated } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { ref, watch, onActivated } from "vue";
+import { useRoute } from "vue-router";
 import { throttle } from "lodash-es";
 import { getDocument, writeDocument, updateDocument } from "@/db";
 import { NoteEditor } from "@/components/NoteEditor";
@@ -14,13 +14,11 @@ import { downloadFile } from "@/utils/file";
 const toast = useToast();
 
 const tabsStore = useTabsStore();
-const router = useRouter();
-
 const route = useRoute();
 
 const initialData = await getDocument(route.params.id as string);
 const note = ref(Object.assign({
-  content: '',
+  content: '&nbsp;',
   name: 'New Note',
   icon: 'i-lucide-sticky-note',
 }, initialData));
