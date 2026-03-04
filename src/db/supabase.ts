@@ -1,12 +1,16 @@
 import { supabase, type UserSettingRow } from '@/lib/supabase'
 import type { ChatModelConfig, AgentConfig, McpServer } from '@/stores/settings'
 
-interface ChatSettings {
+export interface ChatSettings {
   chatModel: string
   mcpServers: string[]
 }
 
-interface WebSearchSettings {
+export interface WebSearchSettings {
+  apiKey: string
+}
+
+export interface ImageModelSettings {
   apiKey: string
 }
 
@@ -53,6 +57,24 @@ export async function fetchModelSettings(): Promise<Record<string, ChatModelConf
   return settings
 }
 
+export async function deleteModelSettings(settingKeys: string[]): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  if (settingKeys.length === 0) return
+
+  const ids = settingKeys.map(key => `model::${key}`)
+
+  const { error } = await supabase
+    .from('user_settings')
+    .delete()
+    .in('id', ids)
+    .eq('user_id', user.id)
+    .eq('type', 'model')
+
+  if (error) throw error
+}
+
 // ============== AGENT SETTINGS ==============
 
 export async function syncAgentSettings(settings: Record<string, AgentConfig>) {
@@ -94,6 +116,24 @@ export async function fetchAgentSettings(): Promise<Record<string, AgentConfig>>
     settings[row.key] = JSON.parse(row.value) as AgentConfig
   }
   return settings
+}
+
+export async function deleteAgentSettings(settingKeys: string[]): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  if (settingKeys.length === 0) return
+
+  const ids = settingKeys.map(key => `agent::${key}`)
+
+  const { error } = await supabase
+    .from('user_settings')
+    .delete()
+    .in('id', ids)
+    .eq('user_id', user.id)
+    .eq('type', 'agent')
+
+  if (error) throw error
 }
 
 // ============== CHAT SETTINGS ==============
@@ -215,6 +255,24 @@ export async function fetchMcpServers(): Promise<Record<string, McpServer>> {
   return servers
 }
 
+export async function deleteMcpServers(serverIds: string[]): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  if (serverIds.length === 0) return
+
+  const ids = serverIds.map(id => `mcp::${id}`)
+
+  const { error } = await supabase
+    .from('user_settings')
+    .delete()
+    .in('id', ids)
+    .eq('user_id', user.id)
+    .eq('type', 'mcp')
+
+  if (error) throw error
+}
+
 // ============== IMAGE MODEL SETTINGS ==============
 
 export async function syncImageModelSettings(settings: Record<string, { apiKey: string }>) {
@@ -256,6 +314,24 @@ export async function fetchImageModelSettings(): Promise<Record<string, { apiKey
     settings[row.key] = JSON.parse(row.value) as { apiKey: string }
   }
   return settings
+}
+
+export async function deleteImageModelSettings(settingKeys: string[]): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  if (settingKeys.length === 0) return
+
+  const ids = settingKeys.map(key => `imageModel::${key}`)
+
+  const { error } = await supabase
+    .from('user_settings')
+    .delete()
+    .in('id', ids)
+    .eq('user_id', user.id)
+    .eq('type', 'imageModel')
+
+  if (error) throw error
 }
 
 // ============== BATCH OPERATIONS ==============

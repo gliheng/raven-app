@@ -211,21 +211,37 @@ export const useSettingsStore = defineStore("settings", () => {
     await initializeMcpServers();
   }
 
-  watch(modelSettings, async (v) => {
+  watch(modelSettings, async (v, oldV) => {
     if (isMerging.value) return;
+
+    // Detect deleted settings
+    const oldKeys = new Set(Object.keys(oldV ?? {}));
+    const deletedKeys = [...oldKeys].filter(key => !(key in v));
+
+    // Persist to database (write current settings)
     await settingsDb.writeAllModelSettings(v);
+
+    // Sync to Supabase (including deletions)
     if (syncStore.syncEnabled) {
-      syncStore.debouncedPushSettings({ model: v });
+      syncStore.debouncedPushSettings({ model: v, deletedModelKeys: deletedKeys });
     }
   }, {
     deep: true,
   });
 
-  watch(agentSettings, async (v) => {
+  watch(agentSettings, async (v, oldV) => {
     if (isMerging.value) return;
+
+    // Detect deleted settings
+    const oldKeys = new Set(Object.keys(oldV ?? {}));
+    const deletedKeys = [...oldKeys].filter(key => !(key in v));
+
+    // Persist to database (write current settings)
     await settingsDb.writeAllAgentSettings(v);
+
+    // Sync to Supabase (including deletions)
     if (syncStore.syncEnabled) {
-      syncStore.debouncedPushSettings({ agent: v });
+      syncStore.debouncedPushSettings({ agent: v, deletedAgentKeys: deletedKeys });
     }
   }, {
     deep: true,
@@ -251,11 +267,19 @@ export const useSettingsStore = defineStore("settings", () => {
     deep: true,
   });
 
-  watch(imageSettings, async (v) => {
+  watch(imageSettings, async (v, oldV) => {
     if (isMerging.value) return;
+
+    // Detect deleted settings
+    const oldKeys = new Set(Object.keys(oldV ?? {}));
+    const deletedKeys = [...oldKeys].filter(key => !(key in v));
+
+    // Persist to database (write current settings)
     await settingsDb.writeAllImageModelSettings(v);
+
+    // Sync to Supabase (including deletions)
     if (syncStore.syncEnabled) {
-      syncStore.debouncedPushSettings({ imageModel: v });
+      syncStore.debouncedPushSettings({ imageModel: v, deletedImageModelKeys: deletedKeys });
     }
   }, {
     deep: true,
@@ -280,16 +304,24 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }, 500);
 
-  watch(mcpServers, async (v) => {
+  watch(mcpServers, async (v, oldV) => {
     if (isMerging.value) return;
-    // Persist to database
+
+    // Detect deleted servers
+    const oldIds = new Set(Object.keys(oldV ?? {}));
+    const deletedIds = [...oldIds].filter(id => !(id in v));
+
+    // Persist to database (including deletions)
+    for (const deletedId of deletedIds) {
+      await settingsDb.deleteMcpServer(deletedId);
+    }
     for (const [, server] of Object.entries(v)) {
       await settingsDb.writeMcpServer(server);
     }
 
-    // Sync to Supabase
+    // Sync to Supabase (including deletions)
     if (syncStore.syncEnabled) {
-      syncStore.debouncedPushSettings({ mcp: v });
+      syncStore.debouncedPushSettings({ mcp: v, deletedMcpIds: deletedIds });
     }
 
     // Restart MCP servers with debouncing

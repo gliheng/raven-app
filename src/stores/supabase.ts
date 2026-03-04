@@ -3,6 +3,8 @@ import { defineStore } from 'pinia'
 import { debounce } from 'lodash-es'
 import { useAuthStore } from '@/stores/auth'
 import * as supabaseDb from '@/db/supabase'
+import type { ChatSettings, WebSearchSettings, ImageModelSettings } from '@/db/supabase'
+import type { ChatModelConfig, AgentConfig, McpServer } from '@/stores/settings'
 
 export type PulledSettings = Awaited<ReturnType<typeof supabaseDb.fetchAllSettings>>
 export type OnPullCallback = (settings: PulledSettings) => Promise<void> | void
@@ -59,12 +61,16 @@ export const useSupabaseStore = defineStore('supabase', () => {
 
   // Push to Supabase (debounced wrapper)
   async function pushSettings(settings: {
-    model?: Record<string, any>
-    agent?: Record<string, any>
-    chat?: any
-    websearch?: any
-    mcp?: Record<string, any>
-    imageModel?: Record<string, any>
+    chat?: ChatSettings
+    websearch?: WebSearchSettings
+    model?: Record<string, ChatModelConfig>
+    deletedModelKeys?: string[]
+    agent?: Record<string, AgentConfig>
+    deletedAgentKeys?: string[]
+    mcp?: Record<string, McpServer>
+    deletedMcpIds?: string[]
+    imageModel?: Record<string, ImageModelSettings>
+    deletedImageModelKeys?: string[]
   }) {
     if (!syncEnabled.value || isSyncing.value) return
     if (!isOnline.value) {
@@ -82,8 +88,14 @@ export const useSupabaseStore = defineStore('supabase', () => {
       if (settings.model) {
         promises.push(supabaseDb.syncModelSettings(settings.model))
       }
+      if (settings.deletedModelKeys) {
+        promises.push(supabaseDb.deleteModelSettings(settings.deletedModelKeys))
+      }
       if (settings.agent) {
         promises.push(supabaseDb.syncAgentSettings(settings.agent))
+      }
+      if (settings.deletedAgentKeys) {
+        promises.push(supabaseDb.deleteAgentSettings(settings.deletedAgentKeys))
       }
       if (settings.chat) {
         promises.push(supabaseDb.syncChatSettings(settings.chat))
@@ -94,8 +106,14 @@ export const useSupabaseStore = defineStore('supabase', () => {
       if (settings.mcp) {
         promises.push(supabaseDb.syncMcpServers(settings.mcp))
       }
+      if (settings.deletedMcpIds) {
+        promises.push(supabaseDb.deleteMcpServers(settings.deletedMcpIds))
+      }
       if (settings.imageModel) {
         promises.push(supabaseDb.syncImageModelSettings(settings.imageModel))
+      }
+      if (settings.deletedImageModelKeys) {
+        promises.push(supabaseDb.deleteImageModelSettings(settings.deletedImageModelKeys))
       }
 
       await Promise.all(promises)
