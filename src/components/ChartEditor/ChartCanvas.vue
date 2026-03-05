@@ -4,7 +4,7 @@ import { ConnectionMode, VueFlow, Panel, useVueFlow, getRectOfNodes, MarkerType 
 import { Background } from '@vue-flow/background';
 import { Controls } from '@vue-flow/controls';
 import { MiniMap } from '@vue-flow/minimap';
-import type { FlowExportObject, NodeChange, EdgeChange } from '@vue-flow/core';
+import type { FlowExportObject, NodeChange, EdgeChange, NodeDimensionChange } from '@vue-flow/core';
 import { nanoid } from 'nanoid';
 import TextNode from './TextNode.vue';
 import DropZoneBackground from './DropZoneBackground.vue';
@@ -34,6 +34,9 @@ const {
   getEdges,
 } = useVueFlow()
 
+// Track nodes waiting for dimensions
+const nodesWaitingForDimensions = new Set<string>();
+
 function triggerChange() {
   const obj = toObject();
   if (!isEqual(obj, flow.value)) {
@@ -46,6 +49,24 @@ onViewportChange((newViewport) => {
 });
 
 onNodesChange((changes: NodeChange[]) => {
+  // Check for dimension changes on nodes we're waiting for
+  for (const change of changes) {
+    if (change.type === 'dimensions') {
+      const dimChange = change as NodeDimensionChange;
+      // Only focus if dimensions exist and are non-zero (actual dimensions received)
+      if (
+        nodesWaitingForDimensions.has(dimChange.id) &&
+        dimChange.dimensions?.width &&
+        dimChange.dimensions?.height &&
+        dimChange.dimensions.width > 0 &&
+        dimChange.dimensions.height > 0
+      ) {
+        nodesWaitingForDimensions.delete(dimChange.id);
+        focusOnNode(dimChange.id);
+      }
+    }
+  }
+
   triggerChange();
 });
 
@@ -71,7 +92,7 @@ async function layoutGraph() {
   })
 }
 
-async function addNode() {
+function addNode() {
   const id = nanoid();
   addNodes([{
     id,
@@ -81,7 +102,7 @@ async function addNode() {
     height: 200,
     position: { x: 0, y: 0 },
   }]);
-  
+
   const changes: NodeChange[] = [{
     id,
     type: 'select',
@@ -89,10 +110,8 @@ async function addNode() {
   }];
   applyNodeChanges(changes);
 
-  // Await vue and dom update
-  await nextTick();
-  await new Promise(resolve => setTimeout(resolve, 0))
-  focusOnNode(id);
+  // Add to waiting list - will focus when dimensions are received
+  nodesWaitingForDimensions.add(id);
 }
 
 
@@ -102,7 +121,6 @@ function focusOnNode(nodeId: string) {
     return;
   }
   const rect = getRectOfNodes([node]);
-  console.log(rect);
   fitBounds(rect, {
     duration: 1000,
   })
