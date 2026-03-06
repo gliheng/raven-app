@@ -17,15 +17,15 @@ const tabItems = [
     slot: "models" as const,
   },
   {
-    label: "Web Search",
-    icon: "i-lucide-search",
-    slot: "tavily" as const,
-  },
-  {
     label: "MCP",
     icon: "i-mdi-server",
     description: "",
     slot: "mcp" as const,
+  },
+  {
+    label: "Web Search",
+    icon: "i-lucide-search",
+    slot: "tavily" as const,
   },
 ] satisfies TabsItem[];
 </script>

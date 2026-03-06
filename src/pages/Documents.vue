@@ -175,7 +175,7 @@ async function deleteDocument(id: string, event: Event) {
             <UButton
               icon="i-lucide-trash-2"
               color="error"
-              variant="ghost"
+              variant="solid"
               size="sm"
               class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
               @click="deleteDocument(document.id, $event)"
