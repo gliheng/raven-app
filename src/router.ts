@@ -22,6 +22,7 @@ export const router = createRouter({
         { name: "image", path: "image", component: () => import("./pages/Image.vue") },
         { name: "documents", path: "documents", component: () => import("./pages/Documents.vue") },
         { name: "journal", path: "journal", component: () => import("./pages/Journal.vue") },
+        { name: "settings", path: "settings", component: () => import("./pages/Settings.vue") },
         { name: "acpdebug", path: "acpdebug", component: () => import("./pages/AcpDebug.vue") },
         { name: "editor", path: "/editor", component: () => import("./pages/TestEditor.vue") },
         { name: "msglist", path: "/msglist", component: () => import("./pages/TestMessageList.vue") },

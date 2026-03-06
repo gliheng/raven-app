@@ -247,26 +247,18 @@ const isMac = platform.startsWith("Mac");</script>
           @click="goToJournal"
         />
       </UTooltip>
-      <UModal
-        :ui="{
-          content: 'w-[720px] max-w-[720px] h-[70dvh]',
-        }"
-      >
-        <UTooltip text="Settings" :content="{
-          side: 'right',
-        }">
-          <UButton
-            icon="i-mdi-cog"
-            color="neutral"
-            :label="collapsed ? undefined : 'Settings'"
-            variant="subtle"
-            block
-          />
-        </UTooltip>
-        <template #content>
-          <Settings />
-        </template>
-      </UModal>
+      <UTooltip text="Settings" :content="{
+        side: 'right',
+      }">
+        <UButton
+          icon="i-mdi-cog"
+          color="neutral"
+          :label="collapsed ? undefined : 'Settings'"
+          variant="subtle"
+          block
+          @click="router.push({ name: 'settings' })"
+        />
+      </UTooltip>
     </template>
   </UDashboardSidebar>
 </template>
