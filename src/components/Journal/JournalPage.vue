@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { toRefs, computed, onMounted } from "vue";
+import { toRefs, onMounted } from "vue";
 import { useJournalStore } from "@/stores/journal";
 import { NoteEditor } from "@/components/NoteEditor";
 import JournalToolbar from "./JournalToolbar.vue";
 import JournalCalendar from "./JournalCalendar.vue";
 import JournalRecent from "./JournalRecent.vue";
-import { throttle } from "lodash-es";
-
-const EMPTY_DOC = '&nbsp;';
 
 const journalStore = useJournalStore();
 const { currentDate, currentJournal, recentJournals } = toRefs(journalStore);
@@ -27,24 +24,12 @@ function goToNextDay() {
 }
 
 function goToToday() {
-  journalStore.goToToday();
+  journalStore.goToToday(); 
 }
 
 function selectDate(date: Date) {
   journalStore.goToDate(date);
 }
-
-const throttledSave = throttle(async (content: string) => {
-  const dayDate = currentDate.value;
-  await journalStore.updateJournalContent(dayDate, content);
-}, 1000);
-
-const currentJournalContent = computed({
-  get: () => currentJournal.value?.content || EMPTY_DOC, // &nbsp; is codemirror's empty placeholder
-  set: (content: string) => {
-    throttledSave(content == EMPTY_DOC ? '' : content);
-  },
-});
 </script>
 
 <template>
@@ -58,17 +43,11 @@ const currentJournalContent = computed({
       />
       
       <div class="flex-1 min-h-0 overflow-y-auto">
-        <div class="mx-10 h-full flex">
+        <div class="mx-10 h-full">
           <NoteEditor
-            v-if="currentJournal"
-            v-model="currentJournalContent"
+            v-model="currentJournal"
             :key="currentDate.toISOString()"
-            :date="currentDate"
           />
-          
-          <div v-else class="flex flex-1 items-center justify-center">
-            <Spinner size="lg" />
-          </div>
         </div>
       </div>
     </div>

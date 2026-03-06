@@ -2,7 +2,10 @@ import { ref, computed, watch } from "vue";
 import { defineStore } from "pinia";
 import moment from "moment";
 import { nanoid } from "nanoid";
+import { debounce } from "lodash-es";
 import { Journal, writeJournal, getJournalByDate, updateJournal, getJournalDatesInMonth, getRecentJournals } from "@/db/journal";
+
+const EMPTY_DOC = '&nbsp;';
 
 export const useJournalStore = defineStore("journal", () => {
   const journals = ref<Record<string, Journal>>({});
@@ -82,15 +85,20 @@ export const useJournalStore = defineStore("journal", () => {
     loadRecentJournals();
   }
 
-  const currentJournal = computed(() => {
-    const dateISO = formatDateISO(currentDate.value);
-    return journals.value[dateISO] || {
-      id: '',
-      date: dateISO,
-      content: '',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  const debouncedSave = debounce(async (content: string) => {
+    await updateJournalContent(currentDate.value, content);
+  }, 1000);
+
+  const currentJournal = computed({
+    get: () => {
+      const dateISO = formatDateISO(currentDate.value);
+      const current = journals.value[dateISO];
+      return current?.content ?? EMPTY_DOC;
+    },
+    set: (content: string) => {
+      const normalizedContent = content === EMPTY_DOC ? '' : content;
+      debouncedSave(normalizedContent);
+    },
   });
 
   function formatDateISO(date: Date): string {
@@ -121,6 +129,8 @@ export const useJournalStore = defineStore("journal", () => {
   }
 
   watch(currentDate, async (newDate, oldDate) => {
+    debouncedSave.flush();
+    
     let isNewMonth = true;
     if (oldDate) {
       isNewMonth = moment(newDate).month() !== moment(oldDate).month() || 
