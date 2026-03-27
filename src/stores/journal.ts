@@ -11,6 +11,7 @@ export const useJournalStore = defineStore("journal", () => {
   const journals = ref<Record<string, Journal>>({});
   const currentDate = ref<Date>(new Date());
   const currentMonthDates = ref<Set<string>>(new Set());
+  const currentMonthDateColors = ref<Record<string, string>>({});
   const recentJournals = ref<Journal[]>([]);
 
   async function loadJournalByDate(date: Date) {
@@ -31,8 +32,14 @@ export const useJournalStore = defineStore("journal", () => {
   async function loadMonthDates(date: Date) {
     const year = moment(date).year();
     const month = moment(date).month() + 1;
-    const dates = await getJournalDatesInMonth(year, month);
-    currentMonthDates.value = new Set(dates);
+    const dateInfos = await getJournalDatesInMonth(year, month);
+    currentMonthDates.value = new Set(dateInfos.map(info => info.date));
+    currentMonthDateColors.value = dateInfos.reduce((acc, info) => {
+      if (info.color) {
+        acc[info.date] = info.color;
+      }
+      return acc;
+    }, {} as Record<string, string>);
   }
 
   async function loadRecentJournals() {
@@ -72,7 +79,7 @@ export const useJournalStore = defineStore("journal", () => {
 
   async function updateJournalContent(date: Date, content: string) {
     const dateISO = formatDateISO(date);
-    
+
     if (!journals.value[dateISO]) {
       await createJournal(date, content);
     } else {
@@ -85,9 +92,43 @@ export const useJournalStore = defineStore("journal", () => {
     loadRecentJournals();
   }
 
+  async function updateJournalColor(date: Date, color: string | undefined) {
+    const dateISO = formatDateISO(date);
+
+    if (!journals.value[dateISO]) {
+      // Create a journal with just the color
+      const id = nanoid();
+      const journal: Journal = {
+        id,
+        date: dateISO,
+        content: '',
+        color,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await writeJournal(journal);
+      journals.value[dateISO] = journal;
+    } else {
+      const newJournal = { color, updatedAt: new Date() };
+      await updateJournal(dateISO, newJournal);
+      Object.assign(journals.value[dateISO], newJournal);
+    }
+
+    if (color) {
+      currentMonthDateColors.value[dateISO] = color;
+    } else {
+      delete currentMonthDateColors.value[dateISO];
+    }
+  }
+
   const debouncedSave = debounce(async (content: string) => {
     await updateJournalContent(currentDate.value, content);
   }, 1000);
+
+  const currentJournalColor = computed(() => {
+    const dateISO = formatDateISO(currentDate.value);
+    return journals.value[dateISO]?.color;
+  });
 
   const currentJournal = computed({
     get: () => {
@@ -148,13 +189,16 @@ export const useJournalStore = defineStore("journal", () => {
     journals,
     currentDate,
     currentJournal,
+    currentJournalColor,
     currentMonthDates,
+    currentMonthDateColors,
     recentJournals,
     loadJournalByDate,
     loadCurrentJournal,
     loadMonthDates,
     loadRecentJournals,
     updateJournalContent,
+    updateJournalColor,
     createJournal,
     goToPreviousDay,
     goToNextDay,

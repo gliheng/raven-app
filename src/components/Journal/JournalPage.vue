@@ -7,7 +7,7 @@ import JournalCalendar from "./JournalCalendar.vue";
 import JournalRecent from "./JournalRecent.vue";
 
 const journalStore = useJournalStore();
-const { currentDate, currentJournal, recentJournals } = toRefs(journalStore);
+const { currentDate, currentJournal, currentJournalColor, recentJournals, currentMonthDates, currentMonthDateColors } = toRefs(journalStore);
 
 await journalStore.loadCurrentJournal();
 
@@ -30,6 +30,10 @@ function goToToday() {
 function selectDate(date: Date) {
   journalStore.goToDate(date);
 }
+
+async function handleColorChange(color: string | undefined) {
+  await journalStore.updateJournalColor(currentDate.value, color);
+}
 </script>
 
 <template>
@@ -37,9 +41,11 @@ function selectDate(date: Date) {
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <JournalToolbar
         :current-date="currentDate"
+        :current-color="currentJournalColor"
         @previous="goToPreviousDay"
         @next="goToNextDay"
         @today="goToToday"
+        @color-change="handleColorChange"
       />
       
       <div class="flex-1 min-h-0 overflow-y-auto">
@@ -56,7 +62,8 @@ function selectDate(date: Date) {
       <div class="overflow-y-auto flex-1">
         <JournalCalendar
           :current-date="currentDate"
-          :highlighted-dates="Array.from(journalStore.currentMonthDates)"
+          :highlighted-dates="Array.from(currentMonthDates)"
+          :date-colors="currentMonthDateColors"
           @date-select="selectDate"
         />
         <JournalRecent

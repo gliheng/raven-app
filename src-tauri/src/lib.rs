@@ -35,6 +35,12 @@ fn get_migrations() -> Vec<Migration> {
             sql: include_str!("../migrations/005_research.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 6,
+            description: "add_journal_color",
+            sql: include_str!("../migrations/006_journal_color.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }
 

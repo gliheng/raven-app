@@ -4,6 +4,7 @@ export interface Journal {
   id: string;
   date: string;
   content?: string;
+  color?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,12 +20,13 @@ function stringToDate(dateString: string): Date {
 export async function writeJournal(data: Journal): Promise<void> {
   if (!db) throw new Error('Database not initialized');
   await db.execute(
-    `INSERT OR REPLACE INTO journal (id, date, content, createdAt, updatedAt)
-     VALUES ($1, $2, $3, $4, $5)`,
+    `INSERT OR REPLACE INTO journal (id, date, content, color, createdAt, updatedAt)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
     [
       data.id,
       data.date,
       data.content ?? null,
+      data.color ?? null,
       dateToString(data.createdAt),
       dateToString(data.updatedAt),
     ]
@@ -61,22 +63,27 @@ export async function deleteJournal(date: string): Promise<void> {
   await db.execute('DELETE FROM journal WHERE date = $1', [date]);
 }
 
-export async function getJournalDatesInMonth(year: number, month: number): Promise<string[]> {
+export interface JournalDateInfo {
+  date: string;
+  color?: string;
+}
+
+export async function getJournalDatesInMonth(year: number, month: number): Promise<JournalDateInfo[]> {
   if (!db) throw new Error('Database not initialized');
   
   const monthStr = String(month).padStart(2, '0');
   const startDate = `${year}-${monthStr}-01`;
   const endDate = `${year}-${monthStr}-31`;
   
-  const result = await db.select<{date: string}[]>(
-    `SELECT date FROM journal 
+  const result = await db.select<JournalDateInfo[]>(
+    `SELECT date, color FROM journal 
      WHERE date >= $1 AND date <= $2
      AND content IS NOT NULL AND content != ''
      ORDER BY date ASC`,
     [startDate, endDate]
   );
   
-  return result.map(r => r.date);
+  return result;
 }
 
 export async function getRecentJournals(sinceDate: string): Promise<Journal[]> {

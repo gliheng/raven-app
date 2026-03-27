@@ -960,6 +960,7 @@ pub async fn move_file(from_path: &str, to_path: &str) -> Result<(), String> {
 struct TerminalSession {
     writer: Box<dyn Write + Send>,
     master: Box<dyn MasterPty + Send>,
+    _child: Box<dyn portable_pty::Child + Send>,
 }
 
 static TERMINAL_SESSIONS: std::sync::LazyLock<Arc<Mutex<HashMap<String, TerminalSession>>>> =
@@ -994,12 +995,13 @@ pub async fn terminal_create_session(
 
     let mut cmd = CommandBuilder::new(&shell);
     cmd.env("TERM", "xterm-256color");
+    cmd.env("COLORTERM", "truecolor");
 
     if let Some(working_dir) = cwd {
         cmd.cwd(working_dir);
     }
 
-    let _child = pair
+    let child = pair
         .slave
         .spawn_command(cmd)
         .map_err(|e| format!("Failed to spawn shell: {}", e))?;
@@ -1051,6 +1053,7 @@ pub async fn terminal_create_session(
     let session = TerminalSession {
         writer,
         master: pair.master,
+        _child: child,
     };
 
     let mut sessions = TERMINAL_SESSIONS.lock().await;

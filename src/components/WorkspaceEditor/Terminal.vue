@@ -92,6 +92,11 @@ onMounted(async () => {
     fontSize: 14,
     fontFamily: 'Menlo, Monaco, Consolas, "Ubuntu Mono", "Courier New", monospace',
     theme: terminalTheme.value,
+    convertEol: true,
+    scrollback: 10000,
+    allowProposedApi: true,
+    screenReaderMode: false,
+    focusMode: 'click',
   });
 
   fitAddon = new FitAddon();
@@ -126,6 +131,20 @@ onMounted(async () => {
     if (!terminal) return;
     sendInput(data);
   });
+
+  // Handle focus events for vim compatibility
+  terminal.onFocus(() => {
+    // Send focus in sequence (ESC [ I)
+    sendInput('\x1b[I');
+  });
+
+  terminal.onBlur(() => {
+    // Send focus out sequence (ESC [ O)
+    sendInput('\x1b[O');
+  });
+
+  // Focus the terminal immediately
+  terminal.focus();
 });
 
 watch(() => mode.value, () => {
