@@ -20,8 +20,7 @@ export const router = createRouter({
         { name: "note", path: "note/:id", component: () => import("./pages/Note.vue") },
         { name: "chart", path: "chart/:id", component: () => import("./pages/Chart.vue") },
         { name: "image", path: "image", component: () => import("./pages/Image.vue") },
-        { name: "research-list", path: "research", component: () => import("./pages/ResearchList.vue") },
-        { name: "research-topic", path: "research/:id", component: () => import("./pages/Research.vue") },
+
         { name: "documents", path: "documents", component: () => import("./pages/Documents.vue") },
         { name: "journal", path: "journal", component: () => import("./pages/Journal.vue") },
         { name: "settings", path: "settings", component: () => import("./pages/Settings.vue") },

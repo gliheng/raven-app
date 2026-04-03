@@ -67,10 +67,6 @@ function addImage() {
   });
 }
 
-function goToResearch() {
-  router.push({ name: "research-list" });
-}
-
 function agentUrl(agent: Agent) {
   return `/agent/${agent.id}`;
 }
@@ -223,17 +219,7 @@ const isMac = platform.startsWith("Mac");</script>
         />
       </UTooltip>
 
-      <UTooltip text="Research Workspace" :content="{
-        side: 'right',
-      }">
-        <UButton
-          :label="collapsed ? undefined : 'Research'"
-          icon="i-lucide-library-big"
-          variant="subtle"
-          color="neutral"
-          @click="goToResearch"
-        />
-      </UTooltip>
+
     </template>
 
     <template #footer="{ collapsed }">

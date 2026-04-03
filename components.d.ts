@@ -12,7 +12,6 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AcpDebugMessageModal: typeof import('./src/components/AcpDebugMessageModal.vue')['default']
-    AddResourceForm: typeof import('./src/components/Research/AddResourceForm.vue')['default']
     AgentChat: typeof import('./src/components/AgentChat/AgentChat.vue')['default']
     AgentModal: typeof import('./src/components/AgentChat/AgentModal.vue')['default']
     AgentSessionList: typeof import('./src/components/AgentChat/AgentSessionList.vue')['default']
@@ -64,9 +63,6 @@ declare module 'vue' {
     PermissionModal: typeof import('./src/components/AgentChat/PermissionModal.vue')['default']
     ProfileTab: typeof import('./src/components/Settings/ProfileTab.vue')['default']
     RegisterForm: typeof import('./src/components/Auth/RegisterForm.vue')['default']
-    ResearchChat: typeof import('./src/components/Research/ResearchChat.vue')['default']
-    ResearchHeader: typeof import('./src/components/Research/ResearchHeader.vue')['default']
-    ResourceList: typeof import('./src/components/Research/ResourceList.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Settings: typeof import('./src/components/Settings/Settings.vue')['default']
@@ -81,7 +77,6 @@ declare module 'vue' {
     TextNode: typeof import('./src/components/ChartEditor/TextNode.vue')['default']
     ThemeSwitcher: typeof import('./src/components/Window/ThemeSwitcher.vue')['default']
     ToggleButtonGroup: typeof import('./src/components/ToggleButtonGroup.vue')['default']
-    UAccordion: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Accordion.vue')['default']
     UAlert: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Alert.vue')['default']
     UApp: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/App.vue')['default']
     UAvatar: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Avatar.vue')['default']
@@ -95,7 +90,6 @@ declare module 'vue' {
     UDashboardGroup: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/DashboardGroup.vue')['default']
     UDashboardResizeHandle: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/DashboardResizeHandle.vue')['default']
     UDashboardSidebar: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/DashboardSidebar.vue')['default']
-    UDrawer: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Drawer.vue')['default']
     UDropdownMenu: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/DropdownMenu.vue')['default']
     UEditor: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Editor.vue')['default']
     UEditorDragHandle: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/EditorDragHandle.vue')['default']
