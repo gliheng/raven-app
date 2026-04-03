@@ -54,7 +54,15 @@ watch(selectedProvider, (newProvider) => {
 });
 
 watch([selectedProvider, selectedModel], ([provider, model]) => {
-  formValues.value = defaultsFromProvierAndModel(provider, model);
+  const newDefaults = defaultsFromProvierAndModel(provider, model);
+  // Preserve uploaded image fields when switching models
+  const imageFields = ['image', 'image2', 'image3'];
+  imageFields.forEach(field => {
+    if (formValues.value[field]) {
+      newDefaults[field] = formValues.value[field];
+    }
+  });
+  formValues.value = newDefaults;
 });
 
 function defaultsFromProvierAndModel(provider: string, model: string) {
@@ -73,25 +81,11 @@ async function fileToBase64(file: File): Promise<string> {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      resolve(result.split(',')[1]);
+      resolve(result);
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
-}
-
-async function handleImageUpload(fieldKey: string, event: Event) {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  if (!file) return;
-
-  try {
-    const base64 = await fileToBase64(file);
-    formValues.value[fieldKey] = base64;
-  } catch (error) {
-    console.error('Error converting image to base64:', error);
-    alert('Failed to process image');
-  }
 }
 
 async function onSubmit() {
@@ -109,8 +103,17 @@ async function onSubmit() {
     const model = selectedModel.value;
     const seed = formValues.value.seed === -1 ? Math.floor(Math.random() * 999999) : formValues.value.seed;
 
+    // Convert File objects to base64 for image fields
+    const imageFields = ['image', 'image2', 'image3'];
+    const convertedValues: Record<string, any> = { ...formValues.value };
+    for (const field of imageFields) {
+      if (convertedValues[field] instanceof File) {
+        convertedValues[field] = await fileToBase64(convertedValues[field]);
+      }
+    }
+
     const params: Record<string, any> = {
-      ...formValues.value,
+      ...convertedValues,
       seed,
     };
 
@@ -235,8 +238,8 @@ async function onSubmit() {
                 v-model="formValues[field.key]"
                 accept="image/*"
                 class="w-full min-h-32"
-                @change="handleImageUpload(field.key, $event)"
               />
+              <p v-if="formValues[field.key]" class="text-sm text-green-600">Image selected</p>
             </div>
           </UFormField>
         </UForm>
