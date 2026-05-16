@@ -3,7 +3,6 @@ use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::env;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -36,28 +35,6 @@ static LISTENING_TASKS: std::sync::LazyLock<
 > = std::sync::LazyLock::new(|| Arc::new(Mutex::new(HashMap::new())));
 
 const APP_UPDATE_PROGRESS_EVENT: &str = "app_update_progress";
-const RAVEN_ACP_ENTRY_RELATIVE_PATH: &str = "../packages/raven-acp/index.ts";
-const RAVEN_ACP_PACKAGE_NAME: &str = "@raven/raven-acp";
-
-fn get_raven_acp_dev_entry_path() -> Result<PathBuf, serde_json::Value> {
-    let cwd = env::current_dir().map_err(|e| {
-        serde_json::json!({
-            "code": 21,
-            "message": format!("Failed to resolve current working directory: {}", e)
-        })
-    })?;
-
-    let entry_path = cwd.join(RAVEN_ACP_ENTRY_RELATIVE_PATH);
-
-    if entry_path.exists() {
-        return Ok(entry_path);
-    }
-
-    Err(serde_json::json!({
-        "code": 22,
-        "message": format!("Failed to locate dev raven-acp entrypoint at {}", RAVEN_ACP_ENTRY_RELATIVE_PATH)
-    }))
-}
 
 #[derive(Default)]
 pub struct PendingAppUpdate(pub StdMutex<Option<Update>>);
@@ -333,29 +310,6 @@ pub async fn acp_initialize(
                 env_vars.insert("OPENCODE_CONFIG_CONTENT".into(), config.to_string());
             }
             "opencode-ai"
-        }
-        "raven" => {
-            if tauri::is_dev() {
-                let entry_path = get_raven_acp_dev_entry_path()?;
-                args = vec!["run".into(), entry_path.to_string_lossy().to_string()];
-            } else {
-                args.push(RAVEN_ACP_PACKAGE_NAME.into());
-            }
-            args.extend(["--transport".into(), "acp".into()]);
-
-            if let Some(ms) = settings {
-                if !ms.api_key.is_empty() {
-                    env_vars.insert("RAVEN_ACP_API_KEY".into(), ms.api_key.clone());
-                }
-                if !ms.base_url.is_empty() {
-                    env_vars.insert("RAVEN_ACP_BASE_URL".into(), ms.base_url);
-                }
-                if !ms.model.is_empty() {
-                    env_vars.insert("RAVEN_ACP_MODEL".into(), ms.model);
-                }
-            }
-
-            RAVEN_ACP_PACKAGE_NAME
         }
         _ => {
             return Err(serde_json::json!({
@@ -1131,9 +1085,6 @@ async fn check_package_installed(
     app_config_dir: &PathBuf,
     app: &tauri::AppHandle,
 ) -> Result<bool, serde_json::Value> {
-    if tauri::is_dev() && package_name == RAVEN_ACP_PACKAGE_NAME {
-        return Ok(true);
-    }
     let sidecar_command = app.shell().sidecar("bun").map_err(|e| {
         serde_json::json!({
             "code": 12,
@@ -1172,10 +1123,6 @@ async fn get_installed_version(
     app_config_dir: &PathBuf,
     app: &tauri::AppHandle,
 ) -> Result<Option<String>, serde_json::Value> {
-    if tauri::is_dev() && package_name == RAVEN_ACP_PACKAGE_NAME {
-        return Ok(Some("0.0.0".to_string()));
-    }
-
     let sidecar_command = app.shell().sidecar("bun").map_err(|e| {
         serde_json::json!({
             "code": 13,
@@ -1224,10 +1171,6 @@ async fn get_installed_version(
 
 // Helper function to get the latest version from npm registry
 async fn get_latest_version(package_name: &str) -> Result<Option<String>, serde_json::Value> {
-    if tauri::is_dev() && package_name == RAVEN_ACP_PACKAGE_NAME {
-        return Ok(Some("0.0.0".to_string()));
-    }
-
     let url = format!("https://registry.npmjs.org/{}", package_name);
 
     let client = reqwest::Client::builder()
