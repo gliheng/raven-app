@@ -246,6 +246,9 @@ pub async fn acp_initialize(
     let mut args = vec!["x".into()];
     // Create environment variables map based on agent type
     let mut env_vars: HashMap<String, String> = HashMap::new();
+
+    let app_config_dir = app.path().app_data_dir().unwrap();
+
     let package_name = match *agent_name {
         "qwen" => {
             args.push("@qwen-code/qwen-code".into());
@@ -331,15 +334,6 @@ pub async fn acp_initialize(
             }
             "opencode-ai"
         }
-        "deepagents" => {
-            args.push("deepagents-acp".into());
-            if let Some(ms) = settings {
-                env_vars.insert("OPENAI_API_KEY".into(), ms.api_key);
-                env_vars.insert("OPENAI_BASE_URL".into(), ms.base_url);
-                env_vars.insert("OPENAI_MODEL".into(), ms.model);
-            }
-            "deepagents-acp"
-        }
         "raven" => {
             if tauri::is_dev() {
                 let entry_path = get_raven_acp_dev_entry_path()?;
@@ -373,8 +367,6 @@ pub async fn acp_initialize(
 
     // println!("Command args: {:?}", args);
     // println!("Environment vars: {:?}", env_vars);
-
-    let app_config_dir = app.path().app_data_dir().unwrap();
 
     // Check if package is already installed
     let is_installed = check_package_installed(package_name, &app_config_dir, &app)

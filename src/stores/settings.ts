@@ -89,12 +89,6 @@ const defaultAgentSettings: Record<string, AgentConfig> = {
     useCustomModel: false,
     model: "",
   },
-  deepagents: {
-    useCustomModel: false,
-    baseUrl: "",
-    model: "",
-    apiKey: "",
-  },
 };
 
 const defaultChatSettings = {
