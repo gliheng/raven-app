@@ -8,7 +8,6 @@ import ICustomQwen from '~icons/custom/qwen';
 import ICustomCodex from '~icons/custom/codex';
 import ICustomClaude from '~icons/custom/claude';
 import ICustomGemini from '~icons/custom/gemini';
-import IDeepAgents from '~icons/custom/deepagents';
 
 const iconMap: Record<string, string | Component> = {
   'codex': ICustomCodex,
@@ -16,7 +15,6 @@ const iconMap: Record<string, string | Component> = {
   'claude': ICustomClaude,
   'qwen': ICustomQwen,
   'opencode': ICustomOpencode,
-  'deepagents': IDeepAgents,
 };
 const defaultIcon = 'i-lucide-bot';
 
@@ -47,7 +45,7 @@ const emit = defineEmits<{
 const agent = ref<AgentFormData>({
   name: 'New Agent',
   icon: 'i-lucide-brain',
-  program: 'codex' as const,
+  program: 'opencode' as const,
   directory: '',
 });
 

@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS journal (
   id TEXT PRIMARY KEY,
   date TEXT NOT NULL UNIQUE,
   content TEXT,
+  color TEXT,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL
 );
