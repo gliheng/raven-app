@@ -14,8 +14,8 @@ pub fn create_pet_window(app: &tauri::AppHandle) -> Result<(), Value> {
         WebviewUrl::App("pet.html".into()),
     )
     .title("Raven Pet")
-    .inner_size(140.0, 180.0)
-    .min_inner_size(140.0, 140.0)
+    .inner_size(70.0, 110.0)
+    .min_inner_size(70.0, 110.0)
     .decorations(false)
     .transparent(true)
     .always_on_top(true)
