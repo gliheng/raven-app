@@ -2227,3 +2227,12 @@ pub async fn mcp_get_prompt(
             })
         })?
 }
+
+#[tauri::command]
+pub fn focus_main_window(app: tauri::AppHandle) -> Result<serde_json::Value, serde_json::Value> {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+    Ok(serde_json::json!({"ok": true}))
+}

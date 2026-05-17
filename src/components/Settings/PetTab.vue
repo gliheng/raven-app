@@ -1,27 +1,29 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue"
 import { usePetStore } from "@/stores/pet"
-import type { PetInfo } from "@/types/pet"
+import PetItemThumb from "@/components/Settings/PetItemThumb.vue"
 
 const petStore = usePetStore()
-const pets = ref<PetInfo[]>([])
+const petItems = ref<{ label: string; value: string; slug: string }[]>([])
 
 onMounted(async () => {
-  pets.value = await petStore.listPets()
+  const pets = await petStore.listPets()
+  petItems.value = pets.map(p => ({ label: p.displayName, value: p.slug, slug: p.slug }))
 })
 
 async function togglePet() {
   await petStore.togglePet()
 }
 
-watch(() => petStore.activeSlug, async (slug) => {
+watch(() => petStore.activeSlug, (slug) => {
   if (slug) {
-    await petStore.setActive(slug)
-    if (petStore.enabled) {
-      await petStore.showPet()
-    }
+    petStore.setActive(slug)
   }
 })
+
+function onSelect(v: string | undefined) {
+  if (v) petStore.activeSlug = v
+}
 </script>
 
 <template>
@@ -43,14 +45,22 @@ watch(() => petStore.activeSlug, async (slug) => {
       <div>
         <p class="text-sm font-medium mb-1">Active Pet</p>
         <USelect
-          :model-value="petStore.activeSlug ?? undefined"
           value-key="value"
-          :items="pets.map(p => ({ label: p.displayName, value: p.slug }))"
-          :disabled="pets.length === 0"
           placeholder="Select a pet..."
-          @update:model-value="(v: string | undefined) => { if (v) petStore.activeSlug = v }"
-        />
-        <p v-if="pets.length === 0" class="text-xs text-gray-500 mt-1">
+          :model-value="petStore.activeSlug ?? undefined"
+          :items="petItems"
+          :disabled="petItems.length === 0"
+          :ui="{ content: 'min-w-fit' }"
+          @update:model-value="onSelect"
+        >
+          <template #item-leading="{ item }">
+            <PetItemThumb :slug="item.slug" />
+          </template>
+          <template #leading>
+            <PetItemThumb v-if="petStore.activeSlug" :slug="petStore.activeSlug" />
+          </template>
+        </USelect>
+        <p v-if="petItems.length === 0" class="text-xs text-gray-500 mt-1">
           No pets found. Install pets via <code>npx petdex install &lt;slug&gt;</code>
         </p>
       </div>
@@ -58,7 +68,6 @@ watch(() => petStore.activeSlug, async (slug) => {
       <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-xs text-gray-500 space-y-1">
         <p>Pet spritesheets are loaded from <code>~/.petdex/pets/</code></p>
         <p>Install new pets with: <code>npx petdex install &lt;slug&gt;</code></p>
-        <p>Right-click the pet to switch between installed pets</p>
       </div>
     </div>
   </div>

@@ -1,0 +1,216 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<style>
+html,body{margin:0;padding:0;background:transparent;overflow:hidden;width:100%;height:100%}
+body{-webkit-user-select:none;user-select:none}
+canvas{display:block;cursor:grab;touch-action:none;transform:scale(0.5);transform-origin:top left;image-rendering:pixelated}
+canvas.dragging{cursor:grabbing}
+</style>
+</head>
+<body>
+<canvas id="pet"></canvas>
+<script>
+const COLS=8,ROWS=9;
+const FRAME_W=192,FRAME_H=208;
+const STATES={
+  idle:{row:0,frames:[{c:0,d:280},{c:1,d:110},{c:2,d:110},{c:3,d:140},{c:4,d:140},{c:5,d:320}],slow:6},
+  'running-right':{row:1,count:8,dur:120,last:220},
+  'running-left':{row:2,count:8,dur:120,last:220},
+  waving:{row:3,count:4,dur:140,last:280},
+  jumping:{row:4,count:5,dur:140,last:280},
+  failed:{row:5,count:8,dur:140,last:240},
+  waiting:{row:6,count:6,dur:150,last:260},
+  running:{row:7,count:6,dur:120,last:220},
+  review:{row:8,count:6,dur:150,last:280}
+};
+const SCALE=0.7;
+const W=Math.round(FRAME_W*SCALE),H=Math.round(FRAME_H*SCALE);
+const canvas=document.getElementById('pet');
+const ctx=canvas.getContext('2d');
+canvas.width=W;canvas.height=H;
+canvas.style.width=W+'px';canvas.style.height=H+'px';
+
+let spritesheet=null;
+let currentState='idle',frameIndex=0;
+let stateTimer=null,resetTimer=null;
+
+function buildFrames(s){
+  if(s.frames){const slow=s.slow||1;return s.frames.map(f=>({c:f.c,r:s.row,d:f.d*slow}))}
+  return Array.from({length:s.count},(_,i)=>({c:i,r:s.row,d:i===s.count-1?s.last:s.dur}))
+}
+
+function play(state){
+  if(state===currentState)return;
+  currentState=state;
+  frameIndex=0;
+  if(stateTimer){clearTimeout(stateTimer);stateTimer=null}
+  render();
+  const def=STATES[state]||STATES.idle;
+  const frames=buildFrames(def);
+  if(frames.length<=1)return;
+  const tick=()=>{
+    stateTimer=setTimeout(()=>{
+      frameIndex=(frameIndex+1)%frames.length;
+      render();
+      tick()
+    },frames[frameIndex].d)
+  };
+  tick()
+}
+
+function render(){
+  if(!spritesheet)return;
+  const def=STATES[currentState]||STATES.idle;
+  const frames=buildFrames(def);
+  const f=frames[frameIndex]||frames[0];
+  ctx.clearRect(0,0,W,H);
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(spritesheet,f.c*FRAME_W,f.r*FRAME_H,FRAME_W,FRAME_H,0,0,W,H)
+}
+
+// --- Tauri API helpers ---
+const T=window.__TAURI__;
+async function invoke(cmd,args){return T.core.invoke(cmd,args)}
+async function listen(event,handler){return T.event.listen(event,handler)}
+
+// --- Event-driven state ---
+listen('pet:state-change',(event)=>{
+  if(dragging)return;
+  if(resetTimer){clearTimeout(resetTimer);resetTimer=null}
+  play(event.payload.state)
+});
+
+// --- Bubble ---
+const AGENT_AVATARS={'claude-code':'/pet/agents/claude-code.svg','codex':'/pet/agents/codex.svg','gemini':'/pet/agents/gemini.svg','opencode':'/pet/agents/opencode.svg','antigravity':'/pet/agents/antigravity.svg'};
+function agentAvatarSrc(s){return AGENT_AVATARS[s]||'/pet/agents/fallback.svg'}
+let bubbleEl=null,bubbleAvatarEl=null,bubbleTextEl=null;
+function ensureBubble(){
+  if(bubbleEl)return bubbleEl;
+  bubbleEl=document.createElement('div');
+  bubbleEl.style.cssText='position:fixed;padding:4px 8px;border-radius:10px;background:#ffffff;color:#111;font:600 11px system-ui,-apple-system,sans-serif;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,0.30);text-align:left;white-space:normal;max-width:190px;display:flex;align-items:center;gap:6px;opacity:0;transition:opacity 180ms ease;pointer-events:none;z-index:5';
+  bubbleAvatarEl=document.createElement('img');
+  bubbleAvatarEl.alt='Agent avatar';
+  bubbleAvatarEl.style.cssText='width:20px;height:20px;flex:0 0 auto;object-fit:cover;display:block';
+  bubbleTextEl=document.createElement('span');
+  bubbleTextEl.style.cssText='display:block;min-width:0;word-break:keep-all;overflow-wrap:break-word';
+  bubbleEl.appendChild(bubbleAvatarEl);
+  bubbleEl.appendChild(bubbleTextEl);
+  document.body.appendChild(bubbleEl);
+  return bubbleEl
+}
+function positionBubble(){
+  if(!bubbleEl||bubbleEl.style.opacity!=='1')return;
+  const rect=canvas.getBoundingClientRect();
+  const bw=bubbleEl.offsetWidth||100,bh=bubbleEl.offsetHeight||22,gap=14;
+  const cx=rect.left+rect.width/2;
+  bubbleEl.style.left=Math.max(4,Math.min(window.innerWidth-bw-4,cx-bw/2))+'px';
+  bubbleEl.style.top=Math.max(2,rect.top-bh-gap)+'px'
+}
+listen('pet:bubble',(event)=>{
+  const{text,agent_source}=event.payload;
+  if(text){
+    const el=ensureBubble();
+    const src=typeof agent_source==='string'?agent_source:'';
+    bubbleAvatarEl.src=agentAvatarSrc(src);
+    bubbleAvatarEl.alt=src?src+' avatar':'Agent avatar';
+    bubbleTextEl.textContent=text;
+    positionBubble();
+    el.style.opacity='1'
+  }else if(bubbleEl)bubbleEl.style.opacity='0'
+});
+window.addEventListener('resize',()=>positionBubble());
+
+// Reload when pet changes in settings
+listen('pet:reload',()=>location.reload());
+
+// --- Drag via startDragging (native OS-level, no IPC) ---
+let dragging=false,currentPos={x:0,y:0},petWin=null;
+const DIR_THRESHOLD=3;
+
+document.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerdown',(e)=>{
+  if(e.button!==0)return;
+  dragStart={x:e.screenX,y:e.screenY};
+  dragging=true;
+  canvas.classList.add('dragging');
+  play('jumping');
+  if(resetTimer){clearTimeout(resetTimer);resetTimer=null}
+  petWin.startDragging();
+  e.preventDefault()
+});
+
+async function endDrag(e){
+  if(!dragging)return;
+  dragging=false;
+  canvas.classList.remove('dragging');
+  const start=dragStart;
+  dragStart=null;
+  if(start&&Math.abs(e.screenX-start.x)<5&&Math.abs(e.screenY-start.y)<5){
+    play('idle');
+    invoke('focus_main_window');
+    return
+  }
+  try{
+    const pos=await petWin.outerPosition();
+    currentPos={x:pos.x,y:pos.y};
+    await invoke('save_pet_state',{state:{slug:activeSlug,x:currentPos.x,y:currentPos.y}})
+  }catch(_){}
+  positionBubble();
+  play('waving');
+  resetTimer=setTimeout(()=>play('idle'),1200)
+}
+document.addEventListener('pointerup',endDrag);
+document.addEventListener('pointercancel',endDrag);
+
+// Track position and animation during native drag via onMoved
+let lastTrackedX=null;
+function startTracking(){
+  if(!petWin)return;
+  petWin.onMoved((e)=>{
+    const pos=e.payload;
+    currentPos={x:pos.x,y:pos.y};
+    if(dragging){
+      if(lastTrackedX!==null){
+        const dx=pos.x-lastTrackedX;
+        if(dx>DIR_THRESHOLD)play('running-right');
+        else if(dx<-DIR_THRESHOLD)play('running-left');
+      }
+      lastTrackedX=pos.x
+    }else lastTrackedX=null
+  })
+}
+
+// --- Pet state ---
+let activeSlug=null;
+
+// --- Init ---
+(async()=>{
+  try{
+    petWin=T.window.getCurrentWindow();
+    startTracking();
+    const state=await invoke('get_pet_state');
+    activeSlug=state.activeSlug||null;
+    const pos=await petWin.outerPosition();
+    currentPos={x:state.x??pos.x,y:state.y??pos.y};
+    if(state.x!=null||state.y!=null){
+      await petWin.setPosition(new T.dpi.PhysicalPosition(Math.round(currentPos.x),Math.round(currentPos.y)))
+    }
+    if(activeSlug){
+      const data=await invoke('read_pet_spritesheet',{slug:activeSlug});
+      const img=new Image();
+      img.onload=()=>{
+        spritesheet=img;
+        currentState='';
+        play('idle');
+        positionBubble()
+      };
+      img.src=data.data
+    }
+  }catch(e){console.error('[Pet] init error:',e)}
+})();
+</script>
+</body>
+</html>

@@ -3,7 +3,8 @@
   "identifier": "default",
   "description": "Capability for the main window",
   "windows": [
-    "main"
+    "main",
+    "pet"
   ],
   "permissions": [
     "core:default",
@@ -40,6 +41,10 @@
     "core:window:allow-unminimize",
     "core:window:allow-show",
     "core:window:allow-set-focus",
+    "core:window:allow-outer-position",
+    "core:window:allow-set-position",
+    "core:event:allow-emit",
+    "core:event:allow-listen",
     "dialog:default",
     "sql:default",
     "sql:allow-execute",

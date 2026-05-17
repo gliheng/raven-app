@@ -10,6 +10,7 @@ import { useChatsStore } from "./stores/chats";
 import { useAuthStore } from "./stores/auth";
 import "./assets/style.css";
 import { useSettingsStore } from "./stores/settings";
+import { usePetStore } from "./stores/pet";
 
 (async () => {
   const app = createApp(App);
@@ -39,5 +40,12 @@ async function initDataStores(pinia: Pinia) {
     console.log('Initializing auth store...');
     const authStore = useAuthStore(pinia);
     await authStore.initialize();
+  }
+
+  // Initialize pet store
+  const petStore = usePetStore();
+  await petStore.initialize();
+  if (petStore.enabled && petStore.activeSlug) {
+    await petStore.showPet();
   }
 }

@@ -11,7 +11,7 @@ pub fn create_pet_window(app: &tauri::AppHandle) -> Result<(), Value> {
     WebviewWindowBuilder::new(
         app,
         PET_WINDOW_LABEL,
-        WebviewUrl::App("index.html#/pet".into()),
+        WebviewUrl::App("pet.html".into()),
     )
     .title("Raven Pet")
     .inner_size(140.0, 180.0)
@@ -22,6 +22,7 @@ pub fn create_pet_window(app: &tauri::AppHandle) -> Result<(), Value> {
     .visible_on_all_workspaces(true)
     .skip_taskbar(true)
     .hidden_title(true)
+    .resizable(false)
     .shadow(false)
     .build()
     .map_err(|e| {

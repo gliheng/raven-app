@@ -2,6 +2,8 @@ use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_sql::{Migration, MigrationKind};
 mod handlers;
 mod mcp;
+mod pet_handlers;
+mod pet_window;
 
 fn get_migrations() -> Vec<Migration> {
     vec![
@@ -58,9 +60,11 @@ pub fn run() {
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
-                // Prevent window from closing on Cmd+W and emit event to frontend
-                api.prevent_close();
-                let _ = window.emit("window-event", ());
+                // Only intercept close for main window
+                if window.label() == "main" {
+                    api.prevent_close();
+                    let _ = window.emit("window-event", ());
+                }
             }
             _ => {}
         })
@@ -114,6 +118,14 @@ pub fn run() {
             handlers::mcp_list_prompts,
             handlers::mcp_read_resource,
             handlers::mcp_get_prompt,
+            handlers::focus_main_window,
+            // Pet commands
+            pet_handlers::list_pets,
+            pet_handlers::read_pet_spritesheet,
+            pet_handlers::create_pet_cmd,
+            pet_handlers::destroy_pet_cmd,
+            pet_handlers::save_pet_state,
+            pet_handlers::get_pet_state,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

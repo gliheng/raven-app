@@ -20,6 +20,7 @@ pub struct PetState {
     pub slug: Option<String>,
     pub x: Option<f64>,
     pub y: Option<f64>,
+    pub enabled: Option<bool>,
 }
 
 fn pets_roots() -> Vec<PathBuf> {
@@ -50,6 +51,7 @@ fn find_spritesheet(pet_dir: &PathBuf) -> Option<PathBuf> {
 
 #[tauri::command]
 pub fn list_pets() -> Result<Value, Value> {
+    let mut seen = std::collections::HashSet::new();
     let mut pets: Vec<PetInfo> = vec![];
     for root in pets_roots() {
         if let Ok(entries) = fs::read_dir(&root) {
@@ -65,6 +67,9 @@ pub fn list_pets() -> Result<Value, Value> {
                     .file_name()
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_default();
+                if !seen.insert(slug.clone()) {
+                    continue;
+                }
                 let pet_json = path.join("pet.json");
                 let display_name = if let Ok(data) = fs::read_to_string(&pet_json) {
                     if let Ok(v) = serde_json::from_str::<Value>(&data) {
@@ -150,6 +155,9 @@ pub fn save_pet_state(state: PetState, app: tauri::AppHandle) -> Result<Value, V
     if let Some(y) = state.y {
         store.set("y", serde_json::json!(y));
     }
+    if let Some(enabled) = state.enabled {
+        store.set("enabled", serde_json::json!(enabled));
+    }
     store.save().map_err(|e| {
         serde_json::json!({"code": "store_save_error", "message": e.to_string()})
     })?;
@@ -165,11 +173,13 @@ pub fn get_pet_state(app: tauri::AppHandle) -> Result<Value, Value> {
     let slug = store.get("activeSlug");
     let x = store.get("x").and_then(|v| v.as_f64());
     let y = store.get("y").and_then(|v| v.as_f64());
+    let enabled = store.get("enabled").and_then(|v| v.as_bool());
 
     Ok(serde_json::json!({
         "activeSlug": slug,
         "x": x,
         "y": y,
+        "enabled": enabled,
     }))
 }
 

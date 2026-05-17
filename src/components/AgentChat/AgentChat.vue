@@ -22,6 +22,8 @@ import {
 import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/vue";
 import mime from "mime";
 import { isTextFile, type FileAttachment } from "@/utils/file";
+import { emit } from "@tauri-apps/api/event";
+import { usePetStore } from "@/stores/pet";
 
 const toast = useToast();
 
@@ -59,6 +61,20 @@ const { client, messages, status, currentModeId, availableModes, availableComman
     }
   },
 });
+
+// Pet integration: drive pet animations from agent status
+const petStore = usePetStore();
+watch(status, (newStatus) => {
+  if (!petStore.enabled || !newStatus) return
+  const map: Record<string, string> = {
+    submitted: "running",
+    streaming: "review",
+    ready: "idle",
+    error: "failed",
+  }
+  const petState = map[newStatus]
+  if (petState) emit("pet:state-change", { state: petState })
+})
 
 const nonInteractive = computed(
   () => status.value == "submitted" || status.value == "streaming",

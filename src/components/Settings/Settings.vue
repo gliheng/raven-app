@@ -3,6 +3,7 @@ import type { TabsItem } from "@nuxt/ui";
 import ModelsTab from "./ModelsTab.vue";
 import TavilyTab from "./TavilyTab.vue";
 import McpTab from "./McpTab.vue";
+import PetTab from "./PetTab.vue";
 import ProfileTab from "./ProfileTab.vue";
 import UpdatesTab from "./UpdatesTab.vue";
 
@@ -27,6 +28,11 @@ const tabItems = [
     label: "Web Search",
     icon: "i-lucide-search",
     slot: "tavily" as const,
+  },
+  {
+    label: "Pet",
+    icon: "i-lucide-dog",
+    slot: "pet" as const,
   },
   {
     label: "Updates",
@@ -72,6 +78,14 @@ const tabItems = [
       <div class="flex-1 min-h-0 overflow-y-auto">
         <div class="pr-4 py-4">
           <TavilyTab />
+        </div>
+      </div>
+    </template>
+    <template #pet>
+      <h1 class="text-xl font-semibold py-4">Pet</h1>
+      <div class="flex-1 min-h-0 overflow-y-auto">
+        <div class="pr-4 py-4">
+          <PetTab />
         </div>
       </div>
     </template>
