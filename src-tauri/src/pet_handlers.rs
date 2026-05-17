@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
-use tauri::Emitter;
 use tauri_plugin_store::StoreExt;
 
 use crate::pet_window;
@@ -181,20 +180,4 @@ pub fn get_pet_state(app: tauri::AppHandle) -> Result<Value, Value> {
         "y": y,
         "enabled": enabled,
     }))
-}
-
-pub fn emit_pet_state(app: &tauri::AppHandle, state: &str, duration: Option<u64>) {
-    let payload = serde_json::json!({
-        "state": state,
-        "duration": duration,
-    });
-    let _ = app.emit("pet:state-change", payload);
-}
-
-pub fn emit_pet_bubble(app: &tauri::AppHandle, text: &str, agent_source: Option<&str>) {
-    let payload = serde_json::json!({
-        "text": text,
-        "agent_source": agent_source,
-    });
-    let _ = app.emit("pet:bubble", payload);
 }
