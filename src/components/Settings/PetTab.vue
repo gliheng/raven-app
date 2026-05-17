@@ -2,14 +2,20 @@
 import { ref, onMounted, watch } from "vue"
 import { usePetStore } from "@/stores/pet"
 import PetItemThumb from "@/components/Settings/PetItemThumb.vue"
+import PetBrowserModal from "@/components/Settings/PetBrowserModal.vue"
 
 const petStore = usePetStore()
 const petItems = ref<{ label: string; value: string; slug: string }[]>([])
+const browserOpen = ref(false)
 
 onMounted(async () => {
+  await refreshPetItems()
+})
+
+async function refreshPetItems() {
   const pets = await petStore.listPets()
   petItems.value = pets.map(p => ({ label: p.displayName, value: p.slug, slug: p.slug }))
-})
+}
 
 async function togglePet() {
   await petStore.togglePet()
@@ -23,6 +29,10 @@ watch(() => petStore.activeSlug, (slug) => {
 
 function onSelect(v: string | undefined) {
   if (v) petStore.activeSlug = v
+}
+
+function onPetInstalled() {
+  refreshPetItems()
 }
 </script>
 
@@ -61,14 +71,26 @@ function onSelect(v: string | undefined) {
           </template>
         </USelect>
         <p v-if="petItems.length === 0" class="text-xs text-gray-500 mt-1">
-          No pets found. Install pets via <code>npx petdex install &lt;slug&gt;</code>
+          No pets installed yet. Browse and install pets below.
         </p>
       </div>
 
+      <UButton
+        variant="soft"
+        color="primary"
+        icon="i-lucide-store"
+        class="w-full"
+        @click="browserOpen = true"
+      >
+        Browse Pets
+      </UButton>
+
       <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-xs text-gray-500 space-y-1">
-        <p>Pet spritesheets are loaded from <code>~/.petdex/pets/</code></p>
-        <p>Install new pets with: <code>npx petdex install &lt;slug&gt;</code></p>
+        <p>Pet spritesheets are loaded from <code>~/.codex/pets/</code> or the app data directory</p>
+        <p>You can also install pets with: <code>npx petdex install &lt;slug&gt;</code></p>
       </div>
+
+      <PetBrowserModal v-model:open="browserOpen" @installed="onPetInstalled" />
     </div>
   </div>
 </template>

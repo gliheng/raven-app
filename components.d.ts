@@ -61,6 +61,7 @@ declare module 'vue' {
     NameEdit: typeof import('./src/components/NameEdit.vue')['default']
     PackageInstallStatus: typeof import('./src/components/AgentChat/PackageInstallStatus.vue')['default']
     PermissionModal: typeof import('./src/components/AgentChat/PermissionModal.vue')['default']
+    PetBrowserModal: typeof import('./src/components/Settings/PetBrowserModal.vue')['default']
     PetBubble: typeof import('./src/components/pet/PetBubble.vue')['default']
     PetItemThumb: typeof import('./src/components/Settings/PetItemThumb.vue')['default']
     PetPicker: typeof import('./src/components/pet/PetPicker.vue')['default']

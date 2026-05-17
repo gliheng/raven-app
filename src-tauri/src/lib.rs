@@ -126,6 +126,8 @@ pub fn run() {
             pet_handlers::destroy_pet_cmd,
             pet_handlers::save_pet_state,
             pet_handlers::get_pet_state,
+            pet_handlers::fetch_pet_manifest,
+            pet_handlers::install_pet,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

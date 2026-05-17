@@ -53,5 +53,9 @@ export const usePetStore = defineStore("pet", () => {
     else showPet()
   }
 
-  return { enabled, activeSlug, pets, initialize, listPets, setActive, showPet, hidePet, togglePet }
+  async function refreshPets() {
+    await listPets()
+  }
+
+  return { enabled, activeSlug, pets, initialize, listPets, refreshPets, setActive, showPet, hidePet, togglePet }
 })

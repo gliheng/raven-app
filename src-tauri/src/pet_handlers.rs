@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
+use tauri::Manager;
 use tauri_plugin_store::StoreExt;
 
 use crate::pet_window;
@@ -22,22 +23,6 @@ pub struct PetState {
     pub enabled: Option<bool>,
 }
 
-fn pets_roots() -> Vec<PathBuf> {
-    let home = match std::env::var("HOME") {
-        Ok(h) => PathBuf::from(h),
-        Err(_) => return vec![],
-    };
-
-    let mut roots = vec![];
-    for rel in &[".petdex/pets", ".codex/pets"] {
-        let dir = home.join(rel);
-        if dir.is_dir() {
-            roots.push(dir);
-        }
-    }
-    roots
-}
-
 fn find_spritesheet(pet_dir: &PathBuf) -> Option<PathBuf> {
     for ext in &["webp", "png"] {
         let path = pet_dir.join(format!("spritesheet.{}", ext));
@@ -48,11 +33,33 @@ fn find_spritesheet(pet_dir: &PathBuf) -> Option<PathBuf> {
     None
 }
 
+/// All directories where pets may live, codex CLI dir first.
+fn pets_roots(app: &tauri::AppHandle) -> Vec<PathBuf> {
+    let mut roots = vec![];
+
+    // Primary: CLI-installed location
+    if let Ok(home) = std::env::var("HOME") {
+        let codex_dir = PathBuf::from(&home).join(".codex").join("pets");
+        if codex_dir.is_dir() {
+            roots.push(codex_dir);
+        }
+    }
+
+    // Secondary: app data dir
+    if let Ok(data_dir) = app.path().app_data_dir() {
+        let pets_dir = data_dir.join("pets");
+        let _ = fs::create_dir_all(&pets_dir);
+        roots.push(pets_dir);
+    }
+
+    roots
+}
+
 #[tauri::command]
-pub fn list_pets() -> Result<Value, Value> {
+pub fn list_pets(app: tauri::AppHandle) -> Result<Value, Value> {
     let mut seen = std::collections::HashSet::new();
     let mut pets: Vec<PetInfo> = vec![];
-    for root in pets_roots() {
+    for root in pets_roots(&app) {
         if let Ok(entries) = fs::read_dir(&root) {
             for entry in entries.flatten() {
                 let path = entry.path();
@@ -99,8 +106,8 @@ pub fn list_pets() -> Result<Value, Value> {
 }
 
 #[tauri::command]
-pub fn read_pet_spritesheet(slug: String) -> Result<Value, Value> {
-    for root in pets_roots() {
+pub fn read_pet_spritesheet(slug: String, app: tauri::AppHandle) -> Result<Value, Value> {
+    for root in pets_roots(&app) {
         let pet_dir = root.join(&slug);
         if let Some(spritesheet) = find_spritesheet(&pet_dir) {
             let bytes = fs::read(&spritesheet).map_err(|e| {
@@ -125,6 +132,69 @@ pub fn read_pet_spritesheet(slug: String) -> Result<Value, Value> {
         "code": "pet_not_found",
         "message": format!("Pet '{}' not found in any pets root", slug)
     }))
+}
+
+#[tauri::command]
+pub async fn fetch_pet_manifest() -> Result<Value, Value> {
+    let resp = reqwest::get("https://petdex.crafter.run/api/manifest")
+        .await
+        .map_err(|e| {
+            serde_json::json!({
+                "code": "fetch_manifest_error",
+                "message": e.to_string()
+            })
+        })?;
+    let data: Value = resp.json().await.map_err(|e| {
+        serde_json::json!({
+            "code": "parse_manifest_error",
+            "message": e.to_string()
+        })
+    })?;
+    Ok(data)
+}
+
+#[tauri::command]
+pub async fn install_pet(
+    slug: String,
+    spritesheet_url: String,
+    pet_json_url: String,
+    app: tauri::AppHandle,
+) -> Result<Value, Value> {
+    let data_dir = app.path().app_data_dir().map_err(|e| {
+        serde_json::json!({"code": "path_error", "message": e.to_string()})
+    })?;
+    let pet_dir = data_dir.join("pets").join(&slug);
+    fs::create_dir_all(&pet_dir).map_err(|e| {
+        serde_json::json!({"code": "create_dir_error", "message": e.to_string()})
+    })?;
+
+    let client = reqwest::Client::new();
+    let (json_resp, sprite_resp) = tokio::join!(
+        client.get(&pet_json_url).send(),
+        client.get(&spritesheet_url).send()
+    );
+
+    let json_bytes = json_resp
+        .map_err(|e| serde_json::json!({"code": "download_error", "message": format!("pet.json: {}", e)}))?
+        .bytes()
+        .await
+        .map_err(|e| serde_json::json!({"code": "download_error", "message": format!("pet.json body: {}", e)}))?;
+    let sprite_bytes = sprite_resp
+        .map_err(|e| serde_json::json!({"code": "download_error", "message": format!("spritesheet: {}", e)}))?
+        .bytes()
+        .await
+        .map_err(|e| serde_json::json!({"code": "download_error", "message": format!("spritesheet body: {}", e)}))?;
+
+    let ext = if spritesheet_url.ends_with(".png") { "png" } else { "webp" };
+
+    fs::write(pet_dir.join("pet.json"), &json_bytes).map_err(|e| {
+        serde_json::json!({"code": "write_error", "message": format!("pet.json: {}", e)})
+    })?;
+    fs::write(pet_dir.join(format!("spritesheet.{}", ext)), &sprite_bytes).map_err(|e| {
+        serde_json::json!({"code": "write_error", "message": format!("spritesheet: {}", e)})
+    })?;
+
+    Ok(serde_json::json!({"ok": true, "slug": slug}))
 }
 
 #[tauri::command]
