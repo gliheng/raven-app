@@ -150,7 +150,6 @@ async function endDrag(e){
   dragStart=null;
   if(start&&Math.abs(e.screenX-start.x)<5&&Math.abs(e.screenY-start.y)<5){
     play('idle');
-    invoke('focus_main_window');
     return
   }
   try{
@@ -164,6 +163,7 @@ async function endDrag(e){
 }
 document.addEventListener('pointerup',endDrag);
 document.addEventListener('pointercancel',endDrag);
+canvas.addEventListener('dblclick',()=>invoke('focus_main_window'));
 
 // Track position and animation during native drag via onMoved
 let lastTrackedX=null;
